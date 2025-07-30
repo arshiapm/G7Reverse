@@ -17,15 +17,6 @@
 
 ---
 
-## 📥 نصب سریع
-
-### 1. کلون کردن مخزن:
-
-```bash
-git clone git@github.com:arshiapm/G7Reverse.git
-cd G7Reverse
-chmod +x g7reverse.sh
-
 2. اجرای اسکریپت:
 ./g7reverse.sh
 در منوی ظاهر شده، یکی از گزینه‌ها را انتخاب کنید:
@@ -58,3 +49,14 @@ TCP BBR برای بهبود سرعت ارتباط فعال می‌شود
 👨‍💻 توسعه‌دهنده
 Arshia
 Telegram: @arshiapm47
+
+---
+
+## 📥 نصب سریع
+
+### 1. کلون کردن مخزن:
+
+```bash
+git clone git@github.com:arshiapm/G7Reverse.git
+cd G7Reverse
+chmod +x g7reverse.sh
