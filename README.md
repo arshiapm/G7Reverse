@@ -17,18 +17,6 @@
 
 ---
 
-2. اجرای اسکریپت:
-./g7reverse.sh
-در منوی ظاهر شده، یکی از گزینه‌ها را انتخاب کنید:
-
-1: نصب کامل
-
-2: حذف تنظیمات
-
-3: بروزرسانی مجدد
-
-0: خروج
-
 
 🧾 پیش‌نیازها
 سیستم‌عامل: Ubuntu 20.04 یا بالاتر
@@ -54,9 +42,7 @@ Telegram: @arshiapm47
 
 ## 📥 نصب سریع
 
-### 1. کلون کردن مخزن:
 
 ```bash
-git clone git@github.com:arshiapm/G7Reverse.git
-cd G7Reverse
-chmod +x g7reverse.sh
+sudo bash -c "$(curl -sL https://github.com/arshiapm/G7Reverse/raw/main/g7reverse.sh)" @ install
+
