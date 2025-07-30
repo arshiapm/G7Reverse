@@ -45,4 +45,8 @@ Telegram: @arshiapm47
 
 ```bash
 sudo bash -c "$(curl -sL https://github.com/arshiapm/G7Reverse/raw/main/g7reverse.sh)" @ install
+```
 
+حمایت از پروژه 
+
+https://zarinp.al/arshiapm
