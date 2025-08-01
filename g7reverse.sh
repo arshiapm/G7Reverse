@@ -36,6 +36,7 @@ function install_script() {
     ufw default deny incoming
     ufw default allow outgoing
     ufw allow 2922/tcp
+    ufw allow 22/tcp
     ufw allow 80/tcp
     ufw allow 443/tcp
     ufw allow 8443/tcp
