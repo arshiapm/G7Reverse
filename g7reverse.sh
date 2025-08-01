@@ -147,65 +147,6 @@ function check_bbr_status() {
     pause
 }
 
-function install_warp() {
-    clear
-    banner
-    echo -e "${GREEN}[+] Installing Cloudflare Warp...${RESET}"
-    curl -s https://pkg.cloudflareclient.com/install.sh | bash
-
-    echo -e "${YELLOW}Registering Warp client...${RESET}"
-    warp-cli registration || echo -e "${RED}Warning: registration command may not be available, please register manually if needed.${RESET}"
-
-    echo -e "${YELLOW}Connecting Warp...${RESET}"
-    warp-cli connect
-
-    echo -e "${GREEN}[✓] Warp installed and connected.${RESET}"
-    pause
-}
-
-function uninstall_warp() {
-    clear
-    banner
-    echo -e "${RED}[!] Removing Warp client...${RESET}"
-    systemctl stop warp-svc
-    systemctl disable warp-svc
-    apt remove --purge cloudflare-warp -y
-    rm -rf /etc/warp
-    echo -e "${GREEN}[✓] Warp client removed.${RESET}"
-    pause
-}
-
-function check_warp_status() {
-    clear
-    banner
-    echo -e "${CYAN}[~] Checking Warp status...${RESET}"
-    warp-cli status
-    pause
-}
-
-# منو Warp دسته‌بندی شده
-function warp_menu() {
-    while true; do
-        clear
-        banner
-        echo -e "Warp Menu:"
-        echo -e "1. Install Warp"
-        echo -e "2. Uninstall Warp"
-        echo -e "3. Check Warp Status"
-        echo -e "0. Back to Main Menu"
-        echo -e "=============================="
-        read -p "Select an option [0-3]: " warp_option
-
-        case $warp_option in
-            1) install_warp ;;
-            2) uninstall_warp ;;
-            3) check_warp_status ;;
-            0) break ;;
-            *) echo -e "${RED}Invalid option!${RESET}" ; sleep 1 ;;
-        esac
-    done
-}
-
 # منو اصلی
 while true; do
     banner
@@ -214,10 +155,9 @@ while true; do
     echo -e "3. Update Script"
     echo -e "4. Fail2Ban Menu"
     echo -e "5. BBR Menu"
-    echo -e "6. Warp Menu"
     echo -e "0. Exit"
     echo -e "=============================="
-    read -p "Select an option [0-6]: " option
+    read -p "Select an option [0-5]: " option
 
     case $option in
         1) install_script ;;
@@ -263,7 +203,6 @@ while true; do
                 esac
             done
             ;;
-        6) warp_menu ;;
         0) echo -e "${CYAN}Bye!${RESET}" ; exit 0 ;;
         *) echo -e "${RED}Invalid option!${RESET}" ; sleep 1 ;;
     esac
