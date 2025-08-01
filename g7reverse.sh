@@ -7,6 +7,11 @@ YELLOW='\e[33m'
 CYAN='\e[36m'
 RESET='\e[0m'
 
+function pause() {
+    echo -e "\n${CYAN}Press Enter to return to menu...${RESET}"
+    read -r
+}
+
 function banner() {
     clear
     echo -e "${CYAN}=============================================="
@@ -14,10 +19,6 @@ function banner() {
     echo -e "==============================================${RESET}"
     echo -e "║  Developer: ${YELLOW}@arshiapm47${CYAN}                      ║"
     echo -e "==============================================${RESET}\n"
-}
-
-function pause() {
-    read -rp "Press any key to return to menu..." -n1
 }
 
 function install_script() {
@@ -30,12 +31,7 @@ function install_script() {
     read -p "Enter local port (default 8000): " LOCAL_PORT
     LOCAL_PORT=${LOCAL_PORT:-8000}
 
-    read -p "Enter domain name (optional, press Enter to skip): " DOMAIN_NAME
-    if [[ -z "$DOMAIN_NAME" ]]; then
-        DOMAIN_NAME="panel.example.ir"
-    fi
-
-    apt update && apt install -y nginx ufw
+    apt update && apt install nginx ufw -y
 
     ufw default deny incoming
     ufw default allow outgoing
@@ -49,6 +45,11 @@ function install_script() {
 
     iptables -D INPUT -p tcp --dport "$LOCAL_PORT" ! -s "$LOCAL_IP" -j DROP 2>/dev/null
     iptables -A INPUT -p tcp --dport "$LOCAL_PORT" ! -s "$LOCAL_IP" -j DROP
+
+    read -p "Enter your domain name for reverse proxy (leave blank to skip): " DOMAIN_NAME
+    if [[ -z "$DOMAIN_NAME" ]]; then
+        DOMAIN_NAME="panel.example.ir"
+    fi
 
     cat > /etc/nginx/sites-available/g7reverse << EOF
 server {
@@ -66,7 +67,7 @@ EOF
     ln -sf /etc/nginx/sites-available/g7reverse /etc/nginx/sites-enabled/
     nginx -t && systemctl restart nginx
 
-    echo -e "${GREEN}[✓] Installation complete. G7Reverse panel running behind domain: $DOMAIN_NAME${RESET}"
+    echo -e "${GREEN}[✓] Installation complete. G7Reverse panel running behind $DOMAIN_NAME.${RESET}"
     pause
 }
 
@@ -89,87 +90,105 @@ function update_script() {
 }
 
 function install_fail2ban() {
+    clear
     banner
     echo -e "${GREEN}[+] Installing Fail2Ban...${RESET}"
-    apt update && apt install -y fail2ban
-    systemctl enable fail2ban --now
+    apt update && apt install fail2ban -y
+    systemctl enable --now fail2ban
     echo -e "${GREEN}[✓] Fail2Ban installed and started.${RESET}"
     pause
 }
 
 function uninstall_fail2ban() {
+    clear
     banner
     echo -e "${RED}[!] Removing Fail2Ban...${RESET}"
     systemctl stop fail2ban
     systemctl disable fail2ban
-    apt purge -y fail2ban
+    apt remove --purge fail2ban -y
     echo -e "${GREEN}[✓] Fail2Ban removed.${RESET}"
     pause
 }
 
+function check_fail2ban_status() {
+    clear
+    banner
+    echo -e "${CYAN}[~] Fail2Ban Status:${RESET}"
+    systemctl status fail2ban --no-pager
+    pause
+}
+
 function install_bbr() {
+    clear
     banner
     echo -e "${GREEN}[+] Installing BBR v3...${RESET}"
-    apt update && apt install -y linux-headers-$(uname -r) gcc make
-    wget -N --no-check-certificate https://github.com/teddysun/across/raw/master/bbr3.sh
-    bash bbr3.sh
-    echo -e "${GREEN}[✓] BBR v3 installed.${RESET}"
+    # نصب کرنل و فعال سازی bbr v3
+    bash <(curl -sSL https://github.com/teddysun/across/raw/master/bbr.sh)
+    echo -e "${GREEN}[✓] BBR v3 installation script executed.${RESET}"
     pause
 }
 
 function uninstall_bbr() {
+    clear
     banner
-    echo -e "${RED}[!] Removing BBR...${RESET}"
-    sysctl -w net.ipv4.tcp_congestion_control=reno
-    sysctl -w net.core.default_qdisc=fq
-    sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf
-    sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf
-    sysctl -p
-    echo -e "${GREEN}[✓] BBR removed and system reverted to default TCP settings.${RESET}"
+    echo -e "${RED}[!] Removing BBR v3...${RESET}"
+    # برای حذف BBR، کرنل و تنظیمات باید دستی پاک شوند یا به کرنل قبلی برگردید.
+    echo -e "${YELLOW}Please reboot and switch to a kernel without BBR manually.${RESET}"
+    pause
+}
+
+function check_bbr_status() {
+    clear
+    banner
+    echo -e "${CYAN}[~] Checking BBR status...${RESET}"
+    sysctl net.ipv4.tcp_congestion_control
+    sysctl net.core.default_qdisc
+    echo -e "\n${CYAN}Current TCP Congestion Control Algorithm and QDISC${RESET}"
     pause
 }
 
 function install_warp() {
+    clear
     banner
     echo -e "${GREEN}[+] Installing Cloudflare Warp...${RESET}"
     curl -s https://pkg.cloudflareclient.com/install.sh | bash
-    echo y | warp-cli register
+
+    echo -e "${YELLOW}Registering Warp client...${RESET}"
+    warp-cli registration || echo -e "${RED}Warning: registration command may not be available, please register manually if needed.${RESET}"
+
+    echo -e "${YELLOW}Connecting Warp...${RESET}"
     warp-cli connect
+
     echo -e "${GREEN}[✓] Warp installed and connected.${RESET}"
     pause
 }
 
 function uninstall_warp() {
+    clear
     banner
-    echo -e "${RED}[!] Uninstalling Cloudflare Warp...${RESET}"
-    warp-cli disconnect
-    warp-cli uninstall
-    systemctl disable warp-svc --now
-    echo -e "${GREEN}[✓] Warp uninstalled.${RESET}"
+    echo -e "${RED}[!] Removing Warp client...${RESET}"
+    systemctl stop warp-svc
+    systemctl disable warp-svc
+    apt remove --purge cloudflare-warp -y
+    rm -rf /etc/warp
+    echo -e "${GREEN}[✓] Warp client removed.${RESET}"
     pause
 }
 
 function check_warp_status() {
+    clear
     banner
-    echo -e "${CYAN}Checking Cloudflare Warp status...${RESET}"
-    STATUS=$(warp-cli status 2>/dev/null | grep 'Status update' | awk -F': ' '{print $2}')
-    if [[ "$STATUS" == "Connected" ]]; then
-        echo -e "${GREEN}Warp is connected and running.${RESET}"
-    elif [[ "$STATUS" == "Registration Missing" || "$STATUS" == "Unable" ]]; then
-        echo -e "${YELLOW}Warp is not registered. Registering now...${RESET}"
-        echo y | warp-cli register
-        warp-cli connect
-        echo -e "${GREEN}Warp registered and connected.${RESET}"
-    else
-        echo -e "${RED}Warp status unknown or failed.${RESET}"
-    fi
+    echo -e "${CYAN}[~] Checking Warp status...${RESET}"
+    warp-cli status
     pause
 }
 
+# منو Warp دسته‌بندی شده
 function warp_menu() {
     while true; do
+        clear
         banner
-        echo -e "${CYAN}--- Warp Menu ---${RESET}"
+        echo -e "Warp Menu:"
         echo -e "1. Install Warp"
         echo -e "2. Uninstall Warp"
         echo -e "3. Check Warp Status"
@@ -187,53 +206,15 @@ function warp_menu() {
     done
 }
 
-function bbr_menu() {
-    while true; do
-        banner
-        echo -e "${CYAN}--- BBR Menu ---${RESET}"
-        echo -e "1. Install BBR v3"
-        echo -e "2. Uninstall BBR"
-        echo -e "0. Back to Main Menu"
-        echo -e "=============================="
-        read -p "Select an option [0-2]: " bbr_option
-
-        case $bbr_option in
-            1) install_bbr ;;
-            2) uninstall_bbr ;;
-            0) break ;;
-            *) echo -e "${RED}Invalid option!${RESET}" ; sleep 1 ;;
-        esac
-    done
-}
-
-function fail2ban_menu() {
-    while true; do
-        banner
-        echo -e "${CYAN}--- Fail2Ban Menu ---${RESET}"
-        echo -e "1. Install Fail2Ban"
-        echo -e "2. Uninstall Fail2Ban"
-        echo -e "0. Back to Main Menu"
-        echo -e "=============================="
-        read -p "Select an option [0-2]: " f2b_option
-
-        case $f2b_option in
-            1) install_fail2ban ;;
-            2) uninstall_fail2ban ;;
-            0) break ;;
-            *) echo -e "${RED}Invalid option!${RESET}" ; sleep 1 ;;
-        esac
-    done
-}
-
 # منو اصلی
 while true; do
     banner
     echo -e "1. Install Script"
     echo -e "2. Uninstall Script"
     echo -e "3. Update Script"
-    echo -e "4. Fail2Ban Options"
-    echo -e "5. BBR Options"
-    echo -e "6. Warp Options"
+    echo -e "4. Fail2Ban Menu"
+    echo -e "5. BBR Menu"
+    echo -e "6. Warp Menu"
     echo -e "0. Exit"
     echo -e "=============================="
     read -p "Select an option [0-6]: " option
@@ -242,8 +223,46 @@ while true; do
         1) install_script ;;
         2) uninstall_script ;;
         3) update_script ;;
-        4) fail2ban_menu ;;
-        5) bbr_menu ;;
+        4) 
+            while true; do
+                clear
+                banner
+                echo -e "Fail2Ban Menu:"
+                echo -e "1. Install Fail2Ban"
+                echo -e "2. Uninstall Fail2Ban"
+                echo -e "3. Check Fail2Ban Status"
+                echo -e "0. Back to Main Menu"
+                echo -e "=============================="
+                read -p "Select an option [0-3]: " f_option
+                case $f_option in
+                    1) install_fail2ban ;;
+                    2) uninstall_fail2ban ;;
+                    3) check_fail2ban_status ;;
+                    0) break ;;
+                    *) echo -e "${RED}Invalid option!${RESET}" ; sleep 1 ;;
+                esac
+            done
+            ;;
+        5)
+            while true; do
+                clear
+                banner
+                echo -e "BBR Menu:"
+                echo -e "1. Install BBR v3"
+                echo -e "2. Uninstall BBR"
+                echo -e "3. Check BBR Status"
+                echo -e "0. Back to Main Menu"
+                echo -e "=============================="
+                read -p "Select an option [0-3]: " b_option
+                case $b_option in
+                    1) install_bbr ;;
+                    2) uninstall_bbr ;;
+                    3) check_bbr_status ;;
+                    0) break ;;
+                    *) echo -e "${RED}Invalid option!${RESET}" ; sleep 1 ;;
+                esac
+            done
+            ;;
         6) warp_menu ;;
         0) echo -e "${CYAN}Bye!${RESET}" ; exit 0 ;;
         *) echo -e "${RED}Invalid option!${RESET}" ; sleep 1 ;;
