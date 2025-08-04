@@ -40,6 +40,7 @@ function install_script() {
     ufw allow 80/tcp
     ufw allow 443/tcp
     ufw allow 8443/tcp
+    ufw allow 6026/tcp
     ufw allow 4433/tcp
     ufw allow 9999/tcp
     ufw --force enable
